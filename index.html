@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -92,7 +92,9 @@
 
       <div class="buttons">
         <button id="start-recording">Start Recording</button>
-        <button style="display: none" id="stop-recording">Stop Recording</button>
+        <button style="display: none" id="stop-recording">
+          Stop Recording
+        </button>
         <button id="download-data">Download Data</button>
         <button id="request-permission">Request Permission</button>
         <button id="add-location">Add Location</button>
@@ -100,75 +102,83 @@
     </div>
 
     <script>
-      const RELATIVE_THRESHOLD = 1.5
-      const MIN_TIME_DIFF = 250
-      const STEP_LENGTH_COEFFICIENT = 0.4
-      const SMOOTHING_FACTOR = 5
+      const RELATIVE_THRESHOLD = 1.5;
+      const MIN_TIME_DIFF = 250;
+      const STEP_LENGTH_COEFFICIENT = 0.4;
+      const SMOOTHING_FACTOR = 5;
 
-      let stepCount = 0
-      let totalDistance = 0
-      let lastStepTime = 0
-      let locationCount = 0
+      let stepCount = 0;
+      let totalDistance = 0;
+      let lastStepTime = 0;
+      let locationCount = 0;
 
-      let accelHistory = []
+      let accelHistory = [];
 
-      let eventCount = 0
-      let frequency = 0
+      let eventCount = 0;
+      let frequency = 0;
 
-      let heading = 0
-      let x = 200 // Initial x-coordinate on canvas
-      let y = 200 // Initial y-coordinate on canvas
-      const stepSize = 10 // Scale for step movement on canvas
+      let heading = 0;
+      let x = 200; // Initial x-coordinate on canvas
+      let y = 200; // Initial y-coordinate on canvas
+      const stepSize = 10; // Scale for step movement on canvas
 
-      let isRecording = false
-      let dataLog = []
+      let isRecording = false;
+      let dataLog = [];
 
-      const canvas = document.getElementById('map')
-      const ctx = canvas.getContext('2d')
-      ctx.fillStyle = 'blue'
+      const canvas = document.getElementById("map");
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "blue";
 
       function updateFrequency() {
-        frequency = eventCount
-        document.getElementById('frequency').textContent = frequency
-        eventCount = 0
+        frequency = eventCount;
+        document.getElementById("frequency").textContent = frequency;
+        eventCount = 0;
       }
 
-      setInterval(updateFrequency, 1000)
+      setInterval(updateFrequency, 1000);
 
       function smoothAcceleration(acceleration) {
-        accelHistory.push(acceleration)
+        accelHistory.push(acceleration);
         if (accelHistory.length > SMOOTHING_FACTOR) {
-          accelHistory.shift()
+          accelHistory.shift();
         }
-        return accelHistory.reduce((sum, value) => sum + value, 0) / accelHistory.length
+        return (
+          accelHistory.reduce((sum, value) => sum + value, 0) /
+          accelHistory.length
+        );
       }
 
-      let accelMax = -Infinity
-      let accelMin = Infinity
+      let accelMax = -Infinity;
+      let accelMin = Infinity;
 
       function detectStep(accelerationMagnitude, timestamp) {
-        accelMax = Math.max(accelMax, accelerationMagnitude)
-        accelMin = Math.min(accelMin, accelerationMagnitude)
+        accelMax = Math.max(accelMax, accelerationMagnitude);
+        accelMin = Math.min(accelMin, accelerationMagnitude);
 
-        const smoothedMagnitude = smoothAcceleration(accelerationMagnitude)
-        if (smoothedMagnitude > RELATIVE_THRESHOLD && timestamp - lastStepTime > MIN_TIME_DIFF) {
-          const stepLength = STEP_LENGTH_COEFFICIENT * Math.pow(accelMax - accelMin, 0.25)
+        const smoothedMagnitude = smoothAcceleration(accelerationMagnitude);
+        if (
+          smoothedMagnitude > RELATIVE_THRESHOLD &&
+          timestamp - lastStepTime > MIN_TIME_DIFF
+        ) {
+          const stepLength =
+            STEP_LENGTH_COEFFICIENT * Math.pow(accelMax - accelMin, 0.25);
 
-          stepCount++
-          totalDistance += stepLength
-          lastStepTime = timestamp
-          accelMax = -Infinity
-          accelMin = Infinity
+          stepCount++;
+          totalDistance += stepLength;
+          lastStepTime = timestamp;
+          accelMax = -Infinity;
+          accelMin = Infinity;
 
-          x += stepLength * stepSize * Math.cos((heading * Math.PI) / 180)
-          y -= stepLength * stepSize * Math.sin((heading * Math.PI) / 180)
+          x += stepLength * stepSize * Math.cos((heading * Math.PI) / 180);
+          y -= stepLength * stepSize * Math.sin((heading * Math.PI) / 180);
 
-          ctx.beginPath()
-          ctx.arc(x, y, 2, 0, 2 * Math.PI)
-          ctx.fill()
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, 2 * Math.PI);
+          ctx.fill();
 
-          document.getElementById('step-count').textContent = stepCount
-          document.getElementById('distance').textContent = totalDistance.toFixed(2)
+          document.getElementById("step-count").textContent = stepCount;
+          document.getElementById("distance").textContent =
+            totalDistance.toFixed(2);
 
           if (isRecording) {
             dataLog.push({
@@ -177,72 +187,86 @@
               totalDistance,
               stepLength,
               magnitude: accelerationMagnitude,
-            })
+            });
           }
         }
       }
 
       function startDeviceMotionListener() {
-        window.addEventListener('devicemotion', (event) => {
-          eventCount++
-          const accelX = event.acceleration.x || 0
-          const accelY = event.acceleration.y || 0
-          const accelZ = event.acceleration.z || 0
-          const magnitude = Math.sqrt(accelX ** 2 + accelY ** 2 + accelZ ** 2)
+        window.addEventListener("devicemotion", (event) => {
+          eventCount++;
+          const accelX = event.acceleration.x || 0;
+          const accelY = event.acceleration.y || 0;
+          const accelZ = event.acceleration.z || 0;
+          const magnitude = Math.sqrt(accelX ** 2 + accelY ** 2 + accelZ ** 2);
 
-          document.getElementById('magnitude').textContent = magnitude.toFixed(2)
-          const timestamp = performance.now()
-          detectStep(magnitude, timestamp)
-        })
+          document.getElementById("magnitude").textContent =
+            magnitude.toFixed(2);
+          const timestamp = performance.now();
+          detectStep(magnitude, timestamp);
+        });
       }
 
       function startDeviceOrientationListener() {
-        function compassHeading(alpha, beta, gamma) {
-          const degtorad = Math.PI / 180
+        function getRotationMatrix(alpha, beta, gamma) {
+          var degtorad = Math.PI / 180;
 
-          const _x = beta ? beta * degtorad : 0 // beta value
-          const _y = gamma ? gamma * degtorad : 0 // gamma value
-          const _z = alpha ? alpha * degtorad : 0 // alpha value
+          var _x = beta ? beta * degtorad : 0;
+          var _y = gamma ? gamma * degtorad : 0;
+          var _z = alpha ? alpha * degtorad : 0;
 
-          const cX = Math.cos(_x)
-          const cY = Math.cos(_y)
-          const cZ = Math.cos(_z)
-          const sX = Math.sin(_x)
-          const sY = Math.sin(_y)
-          const sZ = Math.sin(_z)
+          var cX = Math.cos(_x);
+          var cY = Math.cos(_y);
+          var cZ = Math.cos(_z);
+          var sX = Math.sin(_x);
+          var sY = Math.sin(_y);
+          var sZ = Math.sin(_z);
 
-          const Vx = -cZ * sY - sZ * sX * cY
-          const Vy = -sZ * sY + cZ * sX * cY
-
-          const compassHeading = Math.atan(Vx / Vy)
-          if (Vy < 0) {
-            compassHeading += Math.PI
-          } else if (Vx < 0) {
-            compassHeading += 2 * Math.PI
-          }
-
-          return compassHeading * (180 / Math.PI)
+          return [
+            [cZ * cY - sZ * sX * sY, -cX * sZ, cY * sZ * sX + cZ * sY],
+            [cY * sZ + cZ * sX * sY, cZ * cX, sZ * sY - cZ * cY * sX],
+            [-cX * sY, sX, cX * cY],
+          ];
         }
 
-        window.addEventListener('deviceorientation', (event) => {
+        function compassHeadingFromMatrix(matrix) {
+          var m11 = matrix[0][0];
+          var m12 = matrix[0][1];
+
+          var heading = Math.atan2(m12, m11);
+          heading *= 180 / Math.PI; // Convert radians to degrees
+
+          if (heading < 0) {
+            heading += 360;
+          }
+
+          return heading;
+        }
+
+        function compassHeading(alpha, beta, gamma) {
+          var matrix = getRotationMatrix(alpha, beta, gamma);
+          return compassHeadingFromMatrix(matrix);
+        }
+
+        window.addEventListener("deviceorientation", (event) => {
           if (event.webkitCompassHeading !== undefined) {
-            heading = event.webkitCompassHeading
+            heading = event.webkitCompassHeading;
           }
-          updateHeadingDisplay(heading)
-        })
+          updateHeadingDisplay(heading);
+        });
 
-        window.addEventListener('deviceorientationabsolute', (event) => {
+        window.addEventListener("deviceorientationabsolute", (event) => {
           if (event.alpha !== null && event.absolute) {
-            heading = compassHeading(event.alpha, event.beta, event.gamma)
+            heading = compassHeading(event.alpha, event.beta, event.gamma);
           }
 
-          updateHeadingDisplay(heading)
-        })
+          updateHeadingDisplay(heading);
+        });
 
         function updateHeadingDisplay(value) {
-          const headingElement = document.getElementById('heading')
+          const headingElement = document.getElementById("heading");
           if (headingElement) {
-            headingElement.textContent = value.toFixed(2)
+            headingElement.textContent = value.toFixed(2);
           }
         }
       }
@@ -250,12 +274,12 @@
       function downloadCSV(data) {
         const csvRows = [
           [
-            'Step Count',
-            'Heading (degrees)',
-            'Estimated Distance (meters)',
-            'Step Length (meters)',
-            'Acceleration Magnitude (m/s²)',
-            'Marked Location',
+            "Step Count",
+            "Heading (degrees)",
+            "Estimated Distance (meters)",
+            "Step Length (meters)",
+            "Acceleration Magnitude (m/s²)",
+            "Marked Location",
           ],
           ...data.map((row) => [
             row.stepCount,
@@ -263,86 +287,94 @@
             row.totalDistance.toFixed(2),
             row.stepLength.toFixed(2),
             row.magnitude.toFixed(2),
-            row.markedLocation || '',
+            row.markedLocation || "",
           ]),
-        ]
-        const csvContent = csvRows.map((row) => row.join(',')).join('\n')
-        const blob = new Blob([csvContent], { type: 'text/csv' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = 'pdr_data.csv'
-        a.click()
-        URL.revokeObjectURL(url)
+        ];
+        const csvContent = csvRows.map((row) => row.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "pdr_data.csv";
+        a.click();
+        URL.revokeObjectURL(url);
       }
 
-      document.getElementById('start-recording').addEventListener('click', () => {
-        isRecording = true
-        dataLog = []
-        document.getElementById('start-recording').style.display = 'none' // Hide start button
-        document.getElementById('stop-recording').style.display = 'inline-block' // Show stop button
-      })
+      document
+        .getElementById("start-recording")
+        .addEventListener("click", () => {
+          isRecording = true;
+          dataLog = [];
+          document.getElementById("start-recording").style.display = "none"; // Hide start button
+          document.getElementById("stop-recording").style.display =
+            "inline-block"; // Show stop button
+        });
 
-      document.getElementById('stop-recording').addEventListener('click', () => {
-        isRecording = false
-        document.getElementById('stop-recording').style.display = 'none' // Hide stop button
-        document.getElementById('start-recording').style.display = 'inline-block' // Show start button
-      })
+      document
+        .getElementById("stop-recording")
+        .addEventListener("click", () => {
+          isRecording = false;
+          document.getElementById("stop-recording").style.display = "none"; // Hide stop button
+          document.getElementById("start-recording").style.display =
+            "inline-block"; // Show start button
+        });
 
-      document.getElementById('download-data').addEventListener('click', () => {
+      document.getElementById("download-data").addEventListener("click", () => {
         if (dataLog.length > 0) {
-          downloadCSV(dataLog)
+          downloadCSV(dataLog);
         } else {
-          alert('No data to download!')
+          alert("No data to download!");
         }
-      })
+      });
 
-      document.getElementById('add-location').addEventListener('click', () => {
-        locationCount++
+      document.getElementById("add-location").addEventListener("click", () => {
+        locationCount++;
 
         if (isRecording && dataLog.length > 0) {
-          const lastEntry = dataLog[dataLog.length - 1]
-          lastEntry.markedLocation = `Lokasi ${locationCount}` // Add location count to the last step
+          const lastEntry = dataLog[dataLog.length - 1];
+          lastEntry.markedLocation = `Lokasi ${locationCount}`; // Add location count to the last step
         }
 
-        const label = `Lokasi ${locationCount}`
-        ctx.fillStyle = 'red'
-        ctx.font = '12px Arial'
-        ctx.fillText(label, x + 5, y - 5)
-        ctx.fillStyle = 'blue'
-      })
+        const label = `Lokasi ${locationCount}`;
+        ctx.fillStyle = "red";
+        ctx.font = "12px Arial";
+        ctx.fillText(label, x + 5, y - 5);
+        ctx.fillStyle = "blue";
+      });
 
       function requestPermission() {
-        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        if (typeof DeviceMotionEvent.requestPermission === "function") {
           DeviceMotionEvent.requestPermission()
             .then((response) => {
-              if (response === 'granted') {
-                startDeviceMotionListener()
+              if (response === "granted") {
+                startDeviceMotionListener();
               }
             })
-            .catch(console.error)
+            .catch(console.error);
         } else {
-          startDeviceMotionListener()
+          startDeviceMotionListener();
         }
 
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        if (typeof DeviceOrientationEvent.requestPermission === "function") {
           DeviceOrientationEvent.requestPermission()
             .then((response) => {
-              if (response === 'granted') {
-                startDeviceOrientationListener()
+              if (response === "granted") {
+                startDeviceOrientationListener();
               }
             })
-            .catch(console.error)
+            .catch(console.error);
         } else {
-          startDeviceOrientationListener()
+          startDeviceOrientationListener();
         }
       }
 
-      requestPermission()
+      requestPermission();
 
-      document.getElementById('request-permission').addEventListener('click', () => {
-        requestPermission()
-      })
+      document
+        .getElementById("request-permission")
+        .addEventListener("click", () => {
+          requestPermission();
+        });
     </script>
   </body>
 </html>
