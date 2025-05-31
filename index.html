@@ -257,7 +257,7 @@
 
         window.addEventListener("deviceorientationabsolute", (event) => {
           if (event.alpha !== null && event.absolute) {
-            heading = compassHeading(event.alpha, event.beta, event.gamma);
+            heading = (360 - event.alpha) % 360;
           }
 
           updateHeadingDisplay(heading);
